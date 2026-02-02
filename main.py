@@ -1,10 +1,29 @@
 from fastapi import FastAPI,HTTPException
 from db import get_connection
+from fastapi.middleware.cors import CORSMiddleware
 from auth import check_password,get_perms,require_perm,get_status,add_password,remove
 from typing import Dict
 from crud import read,create,delete,update
 
 app = FastAPI()
+
+
+# Allow frontend origin
+origins = [
+    "http://localhost:5173"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,       # frontend origin
+    allow_credentials=True,
+    allow_methods=["*"],         # GET, POST, etc
+    allow_headers=["*"],         # allow all headers
+)
+
+@app.get("/")
+def landing():
+    return {"status":"OK","message":"Hello World"}
 
 @app.post("/login")
 def login(payload:Dict):
@@ -34,6 +53,7 @@ def login(payload:Dict):
     
     return {
         "status":"OK",
+        "user_id":user,
         "name":name,
         "statusName":statusName,
         "perms":perms
@@ -118,7 +138,8 @@ def get_finances(user_id):
     }
     try:
         data = read(payload)
-        require_perm(data[0]["status_id"],1)
+        if data:
+            require_perm(data[0]["status_id"],1)
         return {
             "status":"OK",
             "data":data
@@ -250,3 +271,44 @@ def delete_user(user_id,profile_id):
         }
     except Exception as e:
         raise HTTPException(500,f"{e}")
+    
+
+@app.get("/info/{profile_id}/")
+def get_user_basic(profile_id):
+    # requester status
+    status = get_status(profile_id)
+
+    # permission 1 required
+    require_perm(status, 1)
+
+    rows = [
+        "up.name",
+        "up.dob",
+        "up.aadhar_no",
+        "st.status_id",
+        "st.name as status_name"
+    ]
+
+    table = "user_personal up JOIN status st ON st.status_id = up.status_id"
+
+    where = [["up.user_id", "=", profile_id]]
+
+    payload = {
+        "table": table,
+        "rows": rows,
+        "where": where
+    }
+
+    try:
+        data = read(payload)
+
+        if not data:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        return {
+            "status": "OK",
+            "data": data[0]
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{e}")
