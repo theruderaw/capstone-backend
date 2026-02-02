@@ -1,0 +1,7 @@
+<<<<<<< HEAD
+=======
+.env
+test.py
+venv/
+__pycache__/
+>>>>>>> 153eaeb (Added gitignore)
