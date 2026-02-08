@@ -29,7 +29,6 @@ def read(payload):
             query += "HAVING " + " AND ".join(payload["having"]) + " "
         # ORDER BY clause
         if "order_by" in payload:
-            # expected format: [("col", "ASC"), ("col2", "DESC")]
             order_parts = []
             for col, direction in payload["order_by"]:
                 order_parts.append(f"{col} {direction}")
@@ -46,13 +45,10 @@ def read(payload):
     cursor = conn.cursor()
     cursor.execute(query)
     print(query)
-    # Get column names
     columns = [desc[0] for desc in cursor.description]
 
-    # Fetch all rows
     rows = cursor.fetchall()
 
-    # Convert rows to list of dicts
     data = [dict(zip(columns, row)) for row in rows]
 
     cursor.close()
@@ -92,10 +88,8 @@ def create(payload):
  
     columns = [desc[0] for desc in cursor.description]
 
-    # Fetch all rows
     rows = cursor.fetchall()
 
-    # Convert rows to list of dicts
     data = [dict(zip(columns, row)) for row in rows]
 
     cursor.close()
@@ -111,7 +105,6 @@ def update(payload):
         if not table or not data or not where:
             raise ValueError("Payload must contain 'table', 'data', and 'where'")
 
-        # SET clause
         set_clause = []
         for col, val in data.items():
             if isinstance(val, str):
@@ -140,10 +133,8 @@ def update(payload):
  
     columns = [desc[0] for desc in cursor.description]
 
-    # Fetch all rows
     rows = cursor.fetchall()
 
-    # Convert rows to list of dicts
     data = [dict(zip(columns, row)) for row in rows]
 
     cursor.close()
@@ -158,7 +149,6 @@ def delete(payload):
         if not table or not where:
             raise ValueError("Payload must contain 'table' and 'where'")
 
-        # WHERE clause
         where_clause = []
         for col, op, val in where:
             if isinstance(val, str):

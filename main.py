@@ -1,32 +1,29 @@
-from fastapi import FastAPI,HTTPException
+from fastapi import FastAPI,HTTPException,Body
 from db import get_connection
 from fastapi.middleware.cors import CORSMiddleware
 from auth import check_password,get_perms,require_perm,get_status,add_password,remove
 from typing import Dict
 from crud import read,create,delete,update
+import datetime
+import secrets
 
 app = FastAPI()
 
-
-# Allow frontend origin
-origins = [
-    "http://localhost:5173"
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,       # frontend origin
+    allow_origins=["*"],  # or ["*"] for dev
     allow_credentials=True,
-    allow_methods=["*"],         # GET, POST, etc
-    allow_headers=["*"],         # allow all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-@app.get("/")
+
+@app.get("/",summary="Default landing route")
 def landing():
     return {"status":"OK","message":"Hello World"}
 
-@app.post("/login")
-def login(payload:Dict):
+@app.post("/sessions",summary="Login / create session")
+def login(payload: Dict):
 
     user,password = payload["user"],payload["password"]
     value,user = check_password(user,password)
@@ -59,13 +56,13 @@ def login(payload:Dict):
         "perms":perms
     }
 
-@app.post("/finances")
-def submit_payment(payload:Dict):
-    status = payload["status"]
+@app.post("/finances/{user_id}",summary="Submit a new finance entry for a user")
+def submit_payment(user_id:int,payload:Dict):
+    status = get_status(user_id)
     payload = {
         "table":"user_finance",
         "data":{
-            "user_id":payload["user_id"],
+            "user_id":user_id,
             "hours_worked":payload["hours"],
             "penalties_observed":payload["penalties"]
         }
@@ -80,7 +77,7 @@ def submit_payment(payload:Dict):
     except Exception as e:
         raise HTTPException(status_code=500,detail=f"{e}")
     
-@app.patch("/finances/{payment_id}/validate")
+@app.patch("/finances/{payment_id}/validate",summary="Validate a finance entry")
 def validate_payment(payment_id,payload:Dict):
     status = get_status(payload["user_id"])
     payload = {
@@ -103,7 +100,7 @@ def validate_payment(payment_id,payload:Dict):
     except Exception as e:
         raise HTTPException(status_code=500,detail=f"{e}")
     
-@app.post("/finances/{payment_id}/authorize")
+@app.patch("/finances/{payment_id}/authorize",summary="Authorize / mark a finance entry as paid")
 def auth_payment(payment_id,payload:Dict):
     status = get_status(payload["user_id"])
     payload = {
@@ -126,10 +123,10 @@ def auth_payment(payment_id,payload:Dict):
     except Exception as e:
         raise HTTPException(status_code=403,detail=f"{e}")
     
-@app.get("/finances/me")
+@app.get("/finances/{user_id}",summary="Get pending finances for a specific user")
 def get_finances(user_id):
-    rows = ["uf.userfinance_id as id","uf.user_id as user_id","up.name as name","work_date","uf.hours_worked","uf.penalties_observed","up.status_id","uf.validated","uf.paid"]
-    table = "user_finance uf JOIN user_personal up ON uf.user_id = up.user_id"
+    rows = ["uf.userfinance_id as id","st.base_wage as base_wage","st.penalty_per_unit as penalty_per_unit","uf.user_id as user_id","up.name as name","work_date","uf.hours_worked","uf.penalties_observed","up.status_id","uf.validated","uf.paid"]
+    table = "user_finance uf JOIN user_personal up ON uf.user_id = up.user_id JOIN status st ON up.status_id = st.status_id"
     where = [["uf.user_id","=",user_id],["paid","=",False]]
     payload = {
         "table":table,
@@ -147,7 +144,7 @@ def get_finances(user_id):
     except Exception as e:
         raise HTTPException(status_code=500,detail=f"{e}")
     
-@app.get("/finances")
+@app.get("/finances",summary="Get all finances with optional filters")
 def get_finances_all(user_id,order:bool = True,validated:bool = False,pending:bool=False):
     status = get_status(user_id)
     
@@ -180,7 +177,7 @@ def get_finances_all(user_id,order:bool = True,validated:bool = False,pending:bo
     except Exception as e:
         raise HTTPException(500,detail=f"{e}")
     
-@app.post("/manage/{user_id}/add")
+@app.post("/manage/{user_id}/add",summary="Create a new user")
 def create_user(user_id,payload:Dict):
     status = get_status(user_id)
     user_personal,auth = payload["user_personal"],payload["auth"]
@@ -205,7 +202,7 @@ def create_user(user_id,payload:Dict):
         "user_added":user
     }
 
-@app.get("/manage/{user_id}")
+@app.get("/manage/{user_id}",summary="List active users")
 def view_user(user_id):
     status = get_status(user_id)
 
@@ -228,8 +225,8 @@ def view_user(user_id):
     except Exception as e:
         raise HTTPException(500,detail=f"{e}")
     
-@app.post("/reset/{user_id}")
-def reset_user(user_id,payload:Dict):
+@app.post("/reset/{user_id}",summary="Reset a user's password")
+def reset_user(user_id:int,payload:Dict):
     res = check_password(user_id,payload["old_password"])   
     print(res)
     if not res:
@@ -243,7 +240,7 @@ def reset_user(user_id,payload:Dict):
     except Exception as e:
         raise HTTPException(500,f"{e}")    
 
-@app.post("/manage/{user_id}/delete")
+@app.patch("/manage/{user_id}/delete",summary="Deactivate / delete a user")
 def delete_user(user_id,profile_id):
     status = get_status(user_id)
 
@@ -258,10 +255,9 @@ def delete_user(user_id,profile_id):
         "where":where
     }
 
-    require_perm(user_id,4)
+    require_perm(status,4)
 
     try:
-        remove(profile_id)
         data = update(payload)
         if not data:
             raise HTTPException(403)
@@ -273,7 +269,7 @@ def delete_user(user_id,profile_id):
         raise HTTPException(500,f"{e}")
     
 
-@app.get("/info/{profile_id}/")
+@app.get("/info/{profile_id}/",summary="Get personal info for a user")
 def get_user_basic(profile_id):
     # requester status
     status = get_status(profile_id)
@@ -286,7 +282,7 @@ def get_user_basic(profile_id):
         "up.dob",
         "up.aadhar_no",
         "st.status_id",
-        "st.name as status_name"
+        'st.name as "role"'
     ]
 
     table = "user_personal up JOIN status st ON st.status_id = up.status_id"
@@ -312,3 +308,29 @@ def get_user_basic(profile_id):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{e}")
+
+@app.post('/assign/helmet/{user_id}')
+def add_helmet(user_id):
+    status = get_status(user_id)
+
+    require_perm(status,8)
+    rfid_tag = secrets.token_hex(16)
+    payload = {
+        "table":"helmet",
+        "data":{
+            "rfid_tag": rfid_tag,
+            "user_id":user_id,
+            "notes": f"Assigned to {user_id} on {datetime.datetime.now()}"
+        }
+    }
+
+    try:
+        create(payload)
+        return {
+            "status": "OK",
+            "data":{
+                "rfid_val":rfid_tag
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500,detail=f"{e}")

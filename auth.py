@@ -41,28 +41,27 @@ import bcrypt
 
 def check_password(user_identifier, entered_password):
     """
-    Returns True if the entered_password matches the stored hash for the user.
+    Returns (True, user_id) if password matches
+    Returns (False, None) otherwise
     user_identifier can be user_id (int) or email (str)
-    Returns False otherwise.
     """
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Determine if user_identifier is numeric (user_id) or string (email)
     if isinstance(user_identifier, int):
-        # Lookup by user_id
         cursor.execute("""
-            SELECT a.password_hash
+            SELECT a.password_hash, a.user_id
             FROM auth a
-            WHERE a.user_id = %s AND a.active = True
+            WHERE a.user_id = %s
+              AND COALESCE(a.active, TRUE) = TRUE
         """, (user_identifier,))
     else:
-        # Lookup by email -> join with user_personal
         cursor.execute("""
-            SELECT a.password_hash,u.user_id
+            SELECT a.password_hash, u.user_id
             FROM auth a
             JOIN user_personal u ON u.user_id = a.user_id
-            WHERE u.email = %s AND a.active = True
+            WHERE u.email = %s
+              AND COALESCE(a.active, TRUE) = TRUE
         """, (user_identifier,))
 
     row = cursor.fetchone()
@@ -70,12 +69,16 @@ def check_password(user_identifier, entered_password):
     conn.close()
 
     if not row:
-        # No matching auth record found
-        return False
+        return False, None
 
-    password_hash = row[0]
-    # Compare entered password with hash
-    return [bcrypt.checkpw(entered_password.encode(), password_hash.encode()),row[1]]
+    password_hash, user_id = row
+
+    is_valid = bcrypt.checkpw(
+        entered_password.encode("utf-8"),
+        password_hash.encode("utf-8")
+    )
+
+    return is_valid, user_id
 
 def get_perms(status_id):
     rows = ["p.permission_id as id","p.code as perm","p.description"]
