@@ -1,8 +1,31 @@
-<<<<<<< HEAD
-=======
-.env
-test.py
-venv/
-__pycache__/
->>>>>>> 153eaeb (Added gitignore)
+# VS Code settings
 .vscode/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+.venv/
+env/
+venv/
+
+# Database files
+*.sqlite3
+*.db
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test and coverage
+.coverage
+htmlcov/
+.pytest_cache/
+*.egg-info/
+
+# Optional: hide scripts or test files you don't want in git
+test.py
