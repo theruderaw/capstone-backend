@@ -6,7 +6,8 @@ from typing import Dict
 from crud import read,create,delete,update
 import datetime
 import secrets
-
+from schemas import FinanceCreate,LoginRequest,UserAction,UserCreate,AuthReset
+from psycopg2.errors import UniqueViolation
 app = FastAPI()
 
 app.add_middleware(
@@ -23,9 +24,9 @@ def landing():
     return {"status":"OK","message":"Hello World"}
 
 @app.post("/sessions",summary="Login / create session")
-def login(payload: Dict):
+def login(payload: LoginRequest):
 
-    user,password = payload["user"],payload["password"]
+    user,password = payload.user,payload.password
     value,user = check_password(user,password)
 
     if not value:
@@ -57,14 +58,14 @@ def login(payload: Dict):
     }
 
 @app.post("/finances/{user_id}",summary="Submit a new finance entry for a user")
-def submit_payment(user_id:int,payload:Dict):
+def submit_payment(user_id:int,payload:FinanceCreate):
     status = get_status(user_id)
     payload = {
         "table":"user_finance",
         "data":{
             "user_id":user_id,
-            "hours_worked":payload["hours"],
-            "penalties_observed":payload["penalties"]
+            "hours_worked":payload.hours,
+            "penalties_observed":payload.penalties
         }
     }
     require_perm(status,1)
@@ -78,13 +79,13 @@ def submit_payment(user_id:int,payload:Dict):
         raise HTTPException(status_code=500,detail=f"{e}")
     
 @app.patch("/finances/{payment_id}/validate",summary="Validate a finance entry")
-def validate_payment(payment_id,payload:Dict):
+def validate_payment(payment_id,payload:UserAction):
     status = get_status(payload["user_id"])
     payload = {
         "table":"user_finance",
         "data":{
             "validated":True,
-            "validated_by":payload["user_id"]
+            "validated_by":payload.user_id
         },
         "where":[["userfinance_id","=",payment_id]]
     }
@@ -101,12 +102,12 @@ def validate_payment(payment_id,payload:Dict):
         raise HTTPException(status_code=500,detail=f"{e}")
     
 @app.patch("/finances/{payment_id}/authorize",summary="Authorize / mark a finance entry as paid")
-def auth_payment(payment_id,payload:Dict):
+def auth_payment(payment_id,payload:UserAction):
     status = get_status(payload["user_id"])
     payload = {
         "table":"user_finance",
         "data":{
-            "authorized_by":payload["user_id"],
+            "authorized_by":payload.user_id,
             "paid":True
         },
         "where":[["userfinance_id","=",payment_id]]
@@ -178,15 +179,16 @@ def get_finances_all(user_id,order:bool = True,validated:bool = False,pending:bo
         raise HTTPException(500,detail=f"{e}")
     
 @app.post("/manage/{user_id}/add",summary="Create a new user")
-def create_user(user_id,payload:Dict):
+def create_user(user_id,payload:UserCreate):
     status = get_status(user_id)
-    user_personal,auth = payload["user_personal"],payload["auth"]
+    user_personal,auth = payload.user_personal,payload.auth
 
     table = "user_personal"
     payload = {
         "table":table,
-        "data":user_personal
+        "data":user_personal.model_dump()
     }
+    print(user_personal.dob)
     require_perm(status,4)
     try:
         data = create(payload)
@@ -194,7 +196,7 @@ def create_user(user_id,payload:Dict):
         raise HTTPException(500,f"{e}")
     user = data[0]['user_id']
     try:
-        add_password(user,auth["password"])
+        add_password(user,auth.password)
     except Exception as e:
         raise HTTPException(403,detail=f"{e}")
     return {
@@ -226,13 +228,13 @@ def view_user(user_id):
         raise HTTPException(500,detail=f"{e}")
     
 @app.post("/reset/{user_id}",summary="Reset a user's password")
-def reset_user(user_id:int,payload:Dict):
-    res = check_password(user_id,payload["old_password"])   
+def reset_user(user_id:int,payload:AuthReset):
+    res = check_password(user_id,payload.old_password)   
     print(res)
     if not res:
         raise HTTPException(403)
     try:
-        add_password(user_id,payload["new_password"])
+        add_password(user_id,payload.new_password)
         return {
             "status":"OK",
             "edited_for":user_id
@@ -241,14 +243,14 @@ def reset_user(user_id:int,payload:Dict):
         raise HTTPException(500,f"{e}")    
 
 @app.patch("/manage/{user_id}/delete",summary="Deactivate / delete a user")
-def delete_user(user_id,profile_id):
-    status = get_status(user_id)
+def delete_user(user_id,payload:UserAction):
+    status = get_status(payload.user_id)
 
     table = "user_personal"
     data = {
         "active":False
     }
-    where = [["user_id","=",profile_id],["active","=",True]]
+    where = [["user_id","=",user_id],["active","=",True]]
     payload = {
         "table":table,
         "data":data,
@@ -309,7 +311,7 @@ def get_user_basic(profile_id):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{e}")
 
-@app.post('/assign/helmet/{user_id}')
+@app.post('/helmet/{user_id}')
 def add_helmet(user_id):
     status = get_status(user_id)
 
@@ -332,5 +334,16 @@ def add_helmet(user_id):
                 "rfid_val":rfid_tag
             }
         }
+    except UniqueViolation as e:
+        raise HTTPException(status_code=409,detail=f"Helmet has been assigned")
     except Exception as e:
         raise HTTPException(status_code=500,detail=f"{e}")
+    
+@app.post("helmet/activate/{helmet_id}")
+def activate_helmet(helmet_id):
+    payload = {
+        "table":"helmet",
+        "data":{
+            ""
+        }
+    }

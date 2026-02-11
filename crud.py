@@ -1,5 +1,6 @@
 from db import get_connection
 from fastapi import HTTPException
+from datetime import date
 
 def read(payload):
     if "query" not in payload:
@@ -69,7 +70,7 @@ def create(payload):
 
         for col, val in payload["data"].items():
             columns.append(col)
-            if isinstance(val, str):
+            if isinstance(val, str) or isinstance(val,date):
                 val = f"'{val}'"
             values.append(str(val))
 
