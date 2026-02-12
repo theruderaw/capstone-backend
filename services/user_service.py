@@ -1,32 +1,48 @@
-from crud import read, update, create
+from crud import read, update, create, delete
 from auth import add_password
+from schemas import UserPersonal,Auth
 
-def list_active_users():
-    payload = {
-        "table": "user_personal",
-        "where": [["active", "=", True]]
+def create_user(user_personal_data:UserPersonal):
+    db_payload = {
+        "table":"user_personal",
+        "data":{
+            "aadhar_no":user_personal_data.aadhar_no,
+            "dob":user_personal_data.dob,
+            "name":user_personal_data.name,
+            "gender":user_personal_data.gender,
+            "father_name":user_personal_data.father_name,
+            "status_id":user_personal_data.status_id,
+            "address":user_personal_data.address,
+            "active":user_personal_data.active,
+            "email":user_personal_data.email
+        }
     }
-    return read(payload)
+    return create(db_payload)
 
-
-def deactivate_user(user_id: int):
-    payload = {
-        "table": "user_personal",
-        "data": {"active": False},
-        "where": [["user_id", "=", user_id], ["active", "=", True]]
+def get_user(user_id:int):
+    db_payload = {
+        "table":"user_personal",
+        "where":[["user_id","=",user_id]]
     }
-    updated = update(payload)
-    if not updated:
-        return None
-    return updated[0]["user_id"]
+    return read(db_payload)
 
+def get_all_user(user_id:int):
+    db_payload = {
+        "table":"user_personal"
+    }
+    return read(db_payload)
 
-def create_user(user_personal_data: dict, password: str) -> int:
-    data = create({"table": "user_personal", "data": user_personal_data})
-    user_id = data[0]["user_id"]
+def update_user(user_personal_data:UserPersonal,user_id:int):
+    db_payload = {
+        "table":"user_personal",
+        "data": user_personal_data.model_dump(),
+        "where":[["user_id","=",user_id]]
+    }
+    return update(db_payload)
 
-    # Add authentication password
-    add_password(user_id, password)
-
-    return user_id
-
+def delete_user(user_id:int):
+    db_payload = {
+        "table":"user_personal",
+        "where":[["user_id","=",user_id]]
+    }
+    return delete(db_payload)

@@ -1,5 +1,6 @@
 # VS Code settings
 .vscode/
+password.txt
 
 # Python cache
 __pycache__/
@@ -9,6 +10,7 @@ __pycache__/
 .venv/
 env/
 venv/
+text.txt
 
 # Database files
 *.sqlite3

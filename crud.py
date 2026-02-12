@@ -45,9 +45,7 @@ def read(payload):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(query)
-    print(query)
     columns = [desc[0] for desc in cursor.description]
-
     rows = cursor.fetchall()
 
     data = [dict(zip(columns, row)) for row in rows]
@@ -108,7 +106,7 @@ def update(payload):
 
         set_clause = []
         for col, val in data.items():
-            if isinstance(val, str):
+            if isinstance(val, str) or isinstance(val,date):
                 val = f"'{val}'"
             set_clause.append(f"{col} = {val}")
         set_str = ", ".join(set_clause)
@@ -161,9 +159,10 @@ def delete(payload):
 
     else:
         query = payload["query"]
-
+    query += "RETURNING *"
     conn = get_connection()
     cursor = conn.cursor()
+    print(query)
     cursor.execute(query)
     conn.commit()
 

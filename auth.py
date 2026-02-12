@@ -104,6 +104,7 @@ def require_perm(status_id,perm_needed):
     print([i["permission_id"] for i in data],perm_needed    )
     if perm_needed not in [i["permission_id"] for i in data]:
         raise HTTPException(403)
+    return True
 
 def get_status(user_id):
     query = f"SELECT status_id FROM user_personal where user_id = {user_id}"

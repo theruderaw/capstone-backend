@@ -1,4 +1,4 @@
-from auth import check_password, get_perms,     add_password
+from auth import check_password, get_perms, add_password
 from crud import read
 
 def authenticate_user(user_id_or_name: str, password: str):

@@ -3,24 +3,21 @@ from auth import get_status,require_perm
 from services.finance_service import get_all_finances,get_finances_self,submit_finance_entry,validated_finances,authorise_finances
 from schemas import FinanceCreate,UserAction
 from typing import Optional
+import logging
 
 router = APIRouter(
     prefix="/finances",
     tags=["finances"]
 )
 
-@router.get("/")
-def sanity_check():
-    return {"status":"OK"}
-
 @router.get("/{user_id}",summary="Get pending finances for a specific user")
-def get_finances(user_id):
+def get_finances(user_id:int,dashboard:bool=False):
     status = get_status(user_id)
+    
     require_perm(status,1)
     try:
-        data = get_finances_self(user_id)
-        if data:
-            require_perm(data[0]["status_id"],1)
+        data = get_finances_self(user_id,dashboard=dashboard)
+        
         return {
             "status":"OK",
             "data":data if data else []
@@ -32,7 +29,7 @@ def get_finances(user_id):
 def submit_payment(user_id: int, finance: FinanceCreate):
 
     status = get_status(user_id)
-    require_perm(status, 1)
+    require_perm(status,3)
 
     try:
         inserted = submit_finance_entry(
@@ -49,7 +46,7 @@ def submit_payment(user_id: int, finance: FinanceCreate):
 @router.patch("/{payment_id}/validate",summary="Validate a finance entry")
 def validate_payment(payment_id,payload:UserAction):
     status = get_status(payload.user_id)
-    require_perm(status,7)
+    require_perm(status,5)
     
     try:
         data = validated_finances(
@@ -69,7 +66,7 @@ def validate_payment(payment_id,payload:UserAction):
 def auth_payment(payment_id,payload:UserAction):
     status = get_status(payload.user_id)
     
-    require_perm(status,5)
+    require_perm(status,6)
     try:
         data = authorise_finances(
             user_id=payload.user_id,
@@ -86,21 +83,24 @@ def auth_payment(payment_id,payload:UserAction):
 
 @router.get("/", summary="Get all finances with optional filters")
 def get_finances_all(
-    user_id: int,
-    validated: Optional[bool] = Query(None),
-    pending: Optional[bool] = Query(None),
+    user_id: int = Query(...),
+    validated: Optional[str] = Query(None),  # accept as string
+    pending: Optional[str] = Query(None),
     order: bool = True
 ):
+    print("Here")
     status = get_status(user_id)
-    require_perm(status, 6)
+    require_perm(status, 2)
+    print("Status:", status)
 
-    try:
-        data = get_all_finances(
-            validated=validated,
-            pending=pending,
-            order=order
-        )
-        return {"status": "OK", "data": data}
+    # Convert validated / pending to bool manually
+    val_bool = validated.lower() == "true" if validated is not None else None
+    pend_bool = pending.lower() == "true" if pending is not None else None
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    data = get_all_finances(
+        validated=val_bool,
+        pending=pend_bool,
+        order=order
+    )
+    print("Data:", data)
+    return {"status": "OK", "data": data}

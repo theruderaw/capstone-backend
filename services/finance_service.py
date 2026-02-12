@@ -1,15 +1,19 @@
 from crud import create,read,update,delete
 from typing import Optional
 
-def get_finances_self(user_id):
-    rows = ["uf.userfinance_id as id","st.base_wage as base_wage","st.penalty_per_unit as penalty_per_unit","uf.user_id as user_id","up.name as name","work_date","uf.hours_worked","uf.penalties_observed","up.status_id","uf.validated","uf.paid"]
+def get_finances_self(user_id,dashboard:bool):
+    rows = ["uf.userfinance_id as id","up.base_wage as base_wage","up.penalty_per_unit as penalty_per_unit","uf.user_id as user_id","up.name as name","work_date","uf.hours_worked","uf.penalties_observed","up.status_id","uf.validated","uf.paid"]
     table = "user_finance uf JOIN user_personal up ON uf.user_id = up.user_id JOIN status st ON up.status_id = st.status_id"
     where = [["uf.user_id","=",user_id],["paid","=",False]]
     payload = {
         "table":table,
         "rows":rows,
-        "where":where
+        "where":where,
+        "order_by":[["uf.userfinance_id","ASC"]]
     }
+    if dashboard:
+        payload["limit"] = 5
+    
     return read(payload)
 
 def submit_finance_entry(user_id: int, hours: int, penalties: int):
@@ -86,4 +90,5 @@ def get_all_finances(
         "order_by": order_by
     }
 
-    return read(payload)
+    data = read(payload)
+    return data

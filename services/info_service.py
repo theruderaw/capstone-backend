@@ -19,3 +19,26 @@ def get_user_info(user_id: int) -> dict:
         raise HTTPException(status_code=404, detail="User not found")
 
     return data[0]
+
+def get_supervisor(user_id:int):
+    db_payload = {
+        "rows":[
+            "s.user_id as supervisor_id",
+            "s.name as supervisor_name",
+            "s.email"
+        ],
+        "table":"user_personal w JOIN user_personal s ON w.supervisor = s.user_id",
+        "where":[["w.user_id","=",user_id]]
+    }
+
+    return read(db_payload)
+
+def reset_working(user_id:int):
+    db_payload = {
+        "table":"user_personal",
+        "data":{
+            "working":False
+        },
+        "where":[["user_id","=",user_id]]
+    }
+    return read(db_payload)
