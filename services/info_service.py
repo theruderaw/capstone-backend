@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from crud import read
+from crud import read,update
 
 def get_user_info(user_id: int) -> dict:
     rows = [
@@ -39,6 +39,24 @@ def reset_working(user_id:int):
         "data":{
             "working":False
         },
+        "where":[["user_id","=",user_id]]
+    }
+    return update(db_payload)
+
+def set_working(user_id:int):
+    db_payload = {
+        "table":"user_personal",
+        "data":{
+            "working":True
+        },
+        "where":[["user_id","=",user_id]]
+    }
+    return update(db_payload)
+
+def status_of_worker(user_id:int):
+    db_payload = {
+        "rows":["working"],
+        "table":"user_personal",
         "where":[["user_id","=",user_id]]
     }
     return read(db_payload)
