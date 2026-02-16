@@ -35,7 +35,18 @@ def validated_finances(user_id:int,payment_id:int):
             "validated":True,
             "validated_by":user_id
         },
-        "where":[["userfinance_id","=",payment_id]]
+        "where":[["userfinance_id","=",payment_id],["rejected","=",False]]
+    }
+    return update(payload)
+
+def reject_finance(user_id:int,payment_id:int):
+    payload = {
+        "table":"user_finance",
+        "data":{
+            "rejected":True,
+            "rejected_by":user_id
+        },
+        "where":[["userfinance_id","=",payment_id],["rejected","=",False]]
     }
     return update(payload)
 
@@ -46,7 +57,7 @@ def authorise_finances(user_id,payment_id):
             "authorized_by":user_id,
             "paid":True
         },
-        "where":[["userfinance_id","=",payment_id]]
+        "where":[["userfinance_id","=",payment_id],["rejected","=",False]]
     }
 
     return update(payload)
@@ -62,10 +73,7 @@ def get_all_finances(
         "uf.work_date",
         "uf.user_id",
         "up.name",
-        "uf.hours_worked as hours",
-        "uf.penalties_observed as penalties",
-        "uf.paid",
-        "uf.validated"
+        "(uf.hours_worked*up.base_wage)-(uf.penalties_observed*up.penalty_per_unit) as amount"
     ]
 
     table = """

@@ -1,6 +1,6 @@
 from fastapi import APIRouter,HTTPException,Query
 from auth import get_status,require_perm
-from services.finance_service import get_all_finances,get_finances_self,submit_finance_entry,validated_finances,authorise_finances
+from services.finance_service import reject_finance,get_all_finances,get_finances_self,submit_finance_entry,validated_finances,authorise_finances
 from schemas import FinanceCreate,UserAction
 from typing import Optional
 import logging
@@ -69,6 +69,25 @@ def auth_payment(payment_id,payload:UserAction):
     require_perm(status,6)
     try:
         data = authorise_finances(
+            user_id=payload.user_id,
+            payment_id=payment_id
+        )
+        if not data:
+            raise HTTPException(404)
+        return {
+            "result":"OK",
+            "edited":data
+        }
+    except Exception as e:
+        raise HTTPException(status_code=403,detail=f"{e}")
+
+@router.patch("/{payment_id}/reject",summary="Reject a finance entry as paid")
+def reject_payment(payment_id,payload:UserAction):
+    status = get_status(payload.user_id)
+    
+    require_perm(status,5)
+    try:
+        data = reject_finance(
             user_id=payload.user_id,
             payment_id=payment_id
         )

@@ -1,9 +1,12 @@
 # routers/info.py
 from fastapi import APIRouter, HTTPException
+from fastapi import WebSocket
 from auth import get_status, require_perm
 from services.info_service import status_of_worker,set_working,get_user_info,get_supervisor,reset_working
+from connections import manager
 
 router = APIRouter(prefix="/info", tags=["Info"])
+
 
 @router.get("/",summary="Get activity status of worker")
 def worker_active(user_id:int):
@@ -49,7 +52,7 @@ def get_supervisor_data(user_id:int):
         raise HTTPException(status_code=500,detail=f"{e}")
 
 @router.post("/break",summary="Set worker inactive")
-def go_break(user_id):
+async def go_break(user_id:int):
     status = get_status(user_id)
     require_perm(status,1)
 
@@ -57,6 +60,7 @@ def go_break(user_id):
         data = reset_working(user_id)
         if not data:
             raise HTTPException(404,"User not found")
+        await manager.broadcast(user_id,{"user_id":user_id,"working":False})
         return {
             "status":"OK",
             "data":data if data else []
@@ -65,16 +69,18 @@ def go_break(user_id):
         raise HTTPException(500,f"{e}")
 
 @router.post("/working",summary="Set worker active")
-def go_working(user_id):
+async def go_working(user_id:int):
     status = get_status(user_id)
     require_perm(status,1)
     try:
         data = set_working(user_id)
         if not data:
             raise HTTPException(404,"User not found")
+        await manager.broadcast(user_id,{"user_id":user_id,"working":True})
         return {
             "status":"OK",
             "data":data if data else []
         }
     except Exception as e:
         raise HTTPException(500,f"{e}")
+    

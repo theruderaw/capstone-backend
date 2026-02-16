@@ -11,7 +11,7 @@ __pycache__/
 env/
 venv/
 text.txt
-
+test.py
 # Database files
 *.sqlite3
 *.db
