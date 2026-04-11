@@ -1,12 +1,11 @@
 from fastapi import FastAPI,HTTPException,Request
 import logging
 from fastapi.middleware.cors import CORSMiddleware
-from routers import project_router,finance_router,auth_router,user_router,info_router,report_router
+from routers import ws_router,project_router,finance_router,auth_router,user_router,info_router,report_router
 
 print("Main module loaded")
 
 
-app = FastAPI()
 
 import logging
 from fastapi import FastAPI, Request
@@ -50,8 +49,11 @@ app.include_router(user_router.router)
 app.include_router(info_router.router)
 app.include_router(report_router.router)
 app.include_router(project_router.router)
+app.include_router(ws_router.router)
 
 @app.get("/",summary="Default landing route")
 def landing():
     return {"status":"OK","message":"Hello World"}
         
+for route in app.routes:
+    print(route.path)

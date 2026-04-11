@@ -1,6 +1,6 @@
 from fastapi import APIRouter,HTTPException,Query
-from services.report_service import get_resolved,submit_report,get_report_summary,resolve_issue,watch_report_manager,watch_report_supervisor,get_report,mark_resolved
-from schemas import ReportSubmission,ResolveReport
+from services.report_service import get_reports,get_resolved,submit_report,get_report_summary,resolve_issue,watch_report_manager,watch_report_supervisor,get_report,mark_resolved
+from schemas import ReportSubmission,ResolveReport,UserAction
 from typing import Optional
 from auth import get_status,require_perm
 
@@ -50,6 +50,7 @@ def resolve(report_id:int,payload:ResolveReport):
             res_date=payload.res_date,
             remarks=payload.remarks
         )
+        print(data)
         if data:
             resolution = mark_resolved(report_id=report_id)
         return {
@@ -77,12 +78,26 @@ def summarize_report(user_id:int,resolved:Optional[bool] = Query(default=None)):
     except Exception as e:
         raise HTTPException(status_code=500,detail=f"{e}")
     
-@router.get("/{report_id}")
+@router.get("/report")
 def get_report_by_id(report_id:int,user_id:int):
     status = get_status(user_id)
     require_perm(status,1)
     try:
         data = get_report(report_id)
+        return {
+            "status":"OK",
+            "data":data if data else []
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500,detail=f"{e}")
+
+@router.get("/all")
+def get_report_all(user_id:int):
+    print(user_id, type(user_id))
+    status = get_status(user_id)
+    require_perm(status,20)
+    try:
+        data = get_reports()
         return {
             "status":"OK",
             "data":data if data else []

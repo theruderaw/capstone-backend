@@ -28,7 +28,10 @@ def get_user(user_id:int):
 
 def get_all_user(user_id:int):
     db_payload = {
-        "table":"user_personal"
+        "rows":["up.*","s.name as status_name"],
+        "table":"user_personal up JOIN status s ON s.status_id = up.status_id",
+        "where":[["active","=",True]],
+        "order_by":[["user_id","ASC"]]
     }
     return read(db_payload)
 
@@ -42,7 +45,17 @@ def update_user(user_personal_data:UserPersonal,user_id:int):
 
 def delete_user(user_id:int):
     db_payload = {
+        "data":{"active":False},
         "table":"user_personal",
         "where":[["user_id","=",user_id]]
     }
-    return delete(db_payload)
+    return update(db_payload)
+
+
+def get_supervisors(status_id:int):
+    db_payload = {
+        "rows":["user_id","name"],
+        "table":"user_personal",
+        "where":[["status_id","=",2 if status_id != 2 else 3]]
+    }
+    return read(db_payload)

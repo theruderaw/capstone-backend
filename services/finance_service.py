@@ -12,7 +12,7 @@ def get_finances_self(user_id,dashboard:bool):
         "order_by":[["uf.userfinance_id","ASC"]]
     }
     if dashboard:
-        payload["limit"] = 5
+        payload["limit"] = 3
     
     return read(payload)
 
@@ -51,6 +51,16 @@ def authorise_finances(user_id,payment_id):
 
     return update(payload)
 
+def reject_finances(user_id:int,payment_id:int):
+    payload = {
+        "table":"user_finance",
+        "data":{
+            "validated":True,
+            "validated_by":user_id
+        },
+        "where":[["userfinance_id","=",payment_id]]
+    }
+    return update(payload)
 
 def get_all_finances(
     validated: Optional[bool] = None,
@@ -83,12 +93,19 @@ def get_all_finances(
 
     order_by = [["uf.userfinance_id", "ASC" if order else "DESC"]]
 
-    payload = {
+    db_payload = {
         "table": table,
         "rows": rows,
         "where": where,
         "order_by": order_by
     }
 
-    data = read(payload)
+    data = read(db_payload)
+    return data
+
+def get_finances_it(user_id:int):
+    db_payload = {
+        "query":f"SELECT * FROM user_finance uf JOIN user_personal up ON uf.user_id = up.user_id JOIN user_personal me ON me.user_id = {user_id} WHERE up.supervisor = me.supervisor"
+    }
+    data = read(db_payload)
     return data

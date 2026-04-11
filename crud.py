@@ -45,6 +45,7 @@ def read(payload):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(query)
+    print(query)
     columns = [desc[0] for desc in cursor.description]
     rows = cursor.fetchall()
 

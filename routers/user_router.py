@@ -1,5 +1,5 @@
 from fastapi import APIRouter,HTTPException,Query
-from services.user_service import delete_user,create_user,get_user,get_all_user,update_user
+from services.user_service import get_supervisors,delete_user,create_user,get_user,get_all_user,update_user
 from services.auth_service import add_password
 from auth import get_status,require_perm
 from schemas import UserCreate,EditUser,UserAction
@@ -19,6 +19,19 @@ def create_new_user(user_id:int,payload:UserCreate):
         return {"status":"OK","user_id":data[0]["user_id"]}
     except Exception as e:
        raise HTTPException(status_code=500,detail=f"{e}")
+
+@router.get("/supervisors")
+def get_super(status_id:int):
+    try:
+        data =  get_supervisors(status_id)
+        if not data:
+            raise HTTPException(status_code=404,detail="No supervisors named")
+        return {
+            "status":"OK",
+            "data":data
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500,detail=f"{e}")
 
 @router.get("/{user_id}")
 def view_self_data(user_id:int):

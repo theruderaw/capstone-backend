@@ -55,8 +55,28 @@ def set_working(user_id:int):
 
 def status_of_worker(user_id:int):
     db_payload = {
-        "rows":["working"],
+        "rows":["working","onsite"],
         "table":"user_personal",
         "where":[["user_id","=",user_id]]
     }
     return read(db_payload)
+
+def set_onsite(user_id:int):
+    db_payload = {
+        "table":"user_personal",
+        "data":{
+            "onsite":True
+        },
+        "where":[["user_id","=",user_id]]
+    }
+    return update(db_payload)
+
+def set_office(user_id:int):
+    db_payload = {
+        "table":"user_personal",
+        "data":{
+            "onsite":False
+        },
+        "where":[["user_id","=",user_id]]
+    }
+    return update(db_payload)

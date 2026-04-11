@@ -63,7 +63,8 @@ def get_project(project_id):
             "rows": [
                 "p.project_id",
                 "p.name AS project_name",
-                "up.name AS project_manager"
+                "up.name AS project_manager",
+                "p.description"
             ],
             "table": "project p ""JOIN user_personal up ON p.created_by = up.user_id",
             "where": [["p.project_id", "=", project_id]],
@@ -86,7 +87,8 @@ def get_members(project_id):
     db_payload = {
         "rows":["u.user_id","u.name",'s.name as "role"'],
         "table":"project_assignment pa join user_personal u ON pa.user_id = u.user_id join status s ON u.status_id = s.status_id",
-        "where":[["pa.project_id","=",project_id]] 
+        "where":[["pa.project_id","=",project_id]],
+        "order by": [["u.user_id","ASC"]] 
     }
     return read(db_payload)
 

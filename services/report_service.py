@@ -100,6 +100,21 @@ def get_report(report_id:int):
     }
     return read(db_payload)
 
+def get_reports():
+    db_payload = {
+        "rows": [
+            "w.name AS worker_name",
+            "s.name AS supervisor_name",
+            "r.id",
+            "r.report_date",
+            "r.reason",
+            "r.report_content",
+            "res.remarks"
+        ],
+        "table" : "reports r JOIN user_personal w ON r.user_id = w.user_id LEFT JOIN user_personal s ON w.supervisor = s.user_id LEFT JOIN resolution res ON r.id = res.report_id",
+    }
+    return read(db_payload)
+
 def get_resolved(report_id:int):
     """SELECT EXISTS (
     SELECT 1 
