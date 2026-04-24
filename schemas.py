@@ -65,3 +65,20 @@ class CreateProject(BaseModel):
 class EditUser(BaseModel):
     user_personal: UserPersonal
     user_action: UserAction
+
+class HelmetAssign(BaseModel):
+    user_id: int
+    helmet_id: int
+    admin: UserAction
+
+class WSMessage(BaseModel):
+    user_id: int
+    data: dict
+
+class WSSubscription(BaseModel):
+    subscriber_id: int
+    topic_id: int
+
+class WSPublish(BaseModel):
+    topic_id: int
+    data: dict

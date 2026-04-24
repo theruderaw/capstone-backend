@@ -2,7 +2,7 @@
 from fastapi import APIRouter, HTTPException
 from auth import get_status, require_perm
 from services.info_service import set_office,set_onsite,status_of_worker,set_working,get_user_info,get_supervisor,reset_working
-from routers.ws_router import manager
+from ws import broadcast_status_change
 
 router = APIRouter(prefix="/info", tags=["Info"])
 
@@ -59,11 +59,11 @@ async def go_break(user_id: int):
         if not data:
             raise HTTPException(404, "User not found")
 
-        # 📡 Broadcast
-        await manager.broadcast({
-            "type": "working_update",
+        # Broadcast the status change to all subscribers of this user
+        await broadcast_status_change(user_id, {
+            "event": "status_change",
             "user_id": user_id,
-            "working": False
+            "status": "break"
         })
 
         return {
@@ -84,11 +84,11 @@ async def go_working(user_id: int):
         if not data:
             raise HTTPException(404, "User not found")
 
-        # 📡 Broadcast
-        await manager.broadcast({
-            "type": "working_update",
+        # Broadcast the status change to all subscribers of this user
+        await broadcast_status_change(user_id, {
+            "event": "status_change",
             "user_id": user_id,
-            "working": True
+            "status": "working"
         })
 
         return {
@@ -109,11 +109,11 @@ async def go_onsite(user_id: int):
         if not data:
             raise HTTPException(404, "User not found")
 
-        # 📡 Broadcast
-        await manager.broadcast({
-            "type": "onsite_update",
+        # Optional: Broadcast onsite status
+        await broadcast_status_change(user_id, {
+            "event": "location_change",
             "user_id": user_id,
-            "onsite": True
+            "location": "onsite"
         })
 
         return {
@@ -134,11 +134,11 @@ async def go_offste(user_id: int):
         if not data:
             raise HTTPException(404, "User not found")
 
-        # 📡 Broadcast
-        await manager.broadcast({
-            "type": "onsite_update",
+        # Optional: Broadcast offsite status
+        await broadcast_status_change(user_id, {
+            "event": "location_change",
             "user_id": user_id,
-            "onsite": False
+            "location": "offsite"
         })
 
         return {

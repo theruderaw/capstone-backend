@@ -75,7 +75,7 @@ def create(payload):
 
         query += f"({', '.join(columns)}) "
         query += f"VALUES ({', '.join(values)})"
-
+        print(query)
     else:
         query = payload["query"]
     

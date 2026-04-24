@@ -1,5 +1,5 @@
 from fastapi import APIRouter,HTTPException,Query
-from services.user_service import get_supervisors,delete_user,create_user,get_user,get_all_user,update_user
+from services.user_service import get_supervisors,delete_user,create_user,get_user,get_all_user,update_user, get_supervisor_hierarchy
 from services.auth_service import add_password
 from auth import get_status,require_perm
 from schemas import UserCreate,EditUser,UserAction
@@ -33,22 +33,6 @@ def get_super(status_id:int):
     except Exception as e:
         raise HTTPException(status_code=500,detail=f"{e}")
 
-@router.get("/{user_id}")
-def view_self_data(user_id:int):
-    status = get_status(user_id=user_id)
-    require_perm(status,7)
-    try:
-        data = get_user(user_id)
-        print(data)
-        if not data:
-            raise HTTPException(status_code=404,detail="User Not Found")
-        return {
-            "status":"OK",
-            "data":data
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500,detail=f"{e}")
-    
 @router.get("/all/{user_id}")
 def view_all_user_data(user_id:int):
     status = get_status(user_id=user_id)
@@ -85,6 +69,23 @@ def delete_user_data(user_id:int, payload: UserAction):
     require_perm(status,10)
     try:
         data = delete_user(user_id)
+        if not data:
+            raise HTTPException(status_code=404,detail="User Not Found")
+        return {
+            "status":"OK",
+            "data":data
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500,detail=f"{e}")
+
+# Dynamic route with path parameter moved to the bottom to avoid shadowing static routes
+@router.get("/{user_id}")
+def view_self_data(user_id:int):
+    status = get_status(user_id=user_id)
+    require_perm(status,7)
+    try:
+        data = get_user(user_id)
+        print(data)
         if not data:
             raise HTTPException(status_code=404,detail="User Not Found")
         return {
