@@ -1,5 +1,5 @@
 from fastapi import APIRouter,HTTPException,Query
-from services.report_service import get_reports,get_resolved,submit_report,get_report_summary,resolve_issue,watch_report_manager,watch_report_supervisor,get_report,mark_resolved
+from services.report_service import get_reports,get_reports_by_user,get_resolved,submit_report,get_report_summary,resolve_issue,watch_report_manager,watch_report_supervisor,get_report,mark_resolved
 from schemas import ReportSubmission,ResolveReport,UserAction
 from typing import Optional
 from auth import get_status,require_perm
@@ -84,6 +84,19 @@ def get_report_by_id(report_id:int,user_id:int):
     require_perm(status,1)
     try:
         data = get_report(report_id)
+        return {
+            "status":"OK",
+            "data":data if data else []
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500,detail=f"{e}")
+
+@router.get("/self")
+def get_my_reports(user_id:int):
+    status = get_status(user_id)
+    require_perm(status,1)
+    try:
+        data = get_reports_by_user(user_id)
         return {
             "status":"OK",
             "data":data if data else []

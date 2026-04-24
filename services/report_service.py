@@ -17,12 +17,16 @@ def submit_report(reason:str,description:str,submission_date:str,user_id:str):
 def get_report_summary(supervisor_id:int):
     db_payload = {
         "rows" : [
+            "w.name AS worker_name",
+            "s.name AS supervisor_name",
             "r.id",
-            "u.name",
-            "r.reason"
+            "r.report_date",
+            "r.reason",
+            "r.report_content",
+            "res.remarks"
         ],
-        "table" : "reports r JOIN user_personal u ON r.user_id = u.user_id",
-        "where" : [["u.supervisor","=",supervisor_id]]
+        "table" : "reports r JOIN user_personal w ON r.user_id = w.user_id LEFT JOIN user_personal s ON w.supervisor = s.user_id LEFT JOIN resolution res ON r.id = res.report_id",
+        "where" : [["w.supervisor","=",supervisor_id]]
     }
     return read(db_payload)
 
@@ -114,6 +118,25 @@ def get_reports():
         "table" : "reports r JOIN user_personal w ON r.user_id = w.user_id LEFT JOIN user_personal s ON w.supervisor = s.user_id LEFT JOIN resolution res ON r.id = res.report_id",
     }
     return read(db_payload)
+
+
+def get_reports_by_user(user_id:int):
+    db_payload = {
+        "rows": [
+            "w.name AS worker_name",
+            "s.name AS supervisor_name",
+            "r.id",
+            "r.report_date",
+            "r.reason",
+            "r.report_content",
+            "res.remarks"
+        ],
+        "table" : "reports r JOIN user_personal w ON r.user_id = w.user_id LEFT JOIN user_personal s ON w.supervisor = s.user_id LEFT JOIN resolution res ON r.id = res.report_id",
+        "where": [["r.user_id","=",user_id]],
+        "order_by":[["r.id","ASC"]]
+    }
+    return read(db_payload)
+
 
 def get_resolved(report_id:int):
     """SELECT EXISTS (

@@ -6,11 +6,11 @@ load_dotenv()
 
 def get_connection():
     conn = psycopg2.connect(
-        dbname="capstone",
-        host="localhost",
-        user="rudra",
-        password="hello",
-        port="5432"
+        dbname=os.getenv("DB_NAME", "capstone"),
+        host=os.getenv("DB_HOST", "localhost"),
+        user=os.getenv("DB_USER", "rudra"),
+        password=os.getenv("DB_PASS", "hello"),
+        port=os.getenv("DB_PORT", "5432")
     )
     
     return conn

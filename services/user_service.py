@@ -59,3 +59,34 @@ def get_supervisors(status_id:int):
         "where":[["status_id","=",2 if status_id != 2 else 3]]
     }
     return read(db_payload)
+def get_supervisor_hierarchy(user_id: int):
+    # Get level 1 supervisor
+    res1 = read({
+        "table": "user_personal",
+        "rows": ["supervisor"],
+        "where": [["user_id", "=", user_id]]
+    })
+    
+    if not res1 or not res1[0]["supervisor"]:
+        return []
+    
+    sup1_id = res1[0]["supervisor"]
+    sup1_data = read({"table": "user_personal", "rows": ["name"], "where": [["user_id", "=", sup1_id]]})
+    sup1_name = sup1_data[0]["name"] if sup1_data else "Unknown"
+    
+    hierarchy = [{"user_id": sup1_id, "name": sup1_name, "level": 1}]
+    
+    # Get level 2 supervisor
+    res2 = read({
+        "table": "user_personal",
+        "rows": ["supervisor"],
+        "where": [["user_id", "=", sup1_id]]
+    })
+    
+    if res2 and res2[0]["supervisor"]:
+        sup2_id = res2[0]["supervisor"]
+        sup2_data = read({"table": "user_personal", "rows": ["name"], "where": [["user_id", "=", sup2_id]]})
+        sup2_name = sup2_data[0]["name"] if sup2_data else "Unknown"
+        hierarchy.append({"user_id": sup2_id, "name": sup2_name, "level": 2})
+        
+    return hierarchy
