@@ -1,6 +1,6 @@
 from pydantic import BaseModel,EmailStr
 from datetime import date
-from typing import List
+from typing import List,Optional
 
 class FinanceCreate(BaseModel):
     hours: int
@@ -71,14 +71,18 @@ class HelmetAssign(BaseModel):
     helmet_id: int
     admin: UserAction
 
+class AlertCreate(BaseModel):
+    severity_id: int
+    user_id: Optional[int] = None
+
 class WSMessage(BaseModel):
     user_id: int
     data: dict
 
 class WSSubscription(BaseModel):
     subscriber_id: int
-    topic_id: int
+    topic_id: str | int
 
 class WSPublish(BaseModel):
-    topic_id: int
+    topic_id: str | int
     data: dict

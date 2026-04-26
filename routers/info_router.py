@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException
 from auth import get_status, require_perm
 from services.info_service import set_office,set_onsite,status_of_worker,set_working,get_user_info,get_supervisor,reset_working
 from ws import broadcast_status_change
+from services.alert_service import create_and_broadcast_alert
 
 router = APIRouter(prefix="/info", tags=["Info"])
 
@@ -66,6 +67,13 @@ async def go_break(user_id: int):
             "status": "break"
         })
 
+        # Register as an info alert
+        await create_and_broadcast_alert(
+            severity_id=1,
+            message=f"Worker {user_id} went on break",
+            worker_id=user_id
+        )
+
         return {
             "status": "OK",
             "data": data
@@ -90,6 +98,13 @@ async def go_working(user_id: int):
             "user_id": user_id,
             "status": "working"
         })
+
+        # Register as an info alert
+        await create_and_broadcast_alert(
+            severity_id=1,
+            message=f"Worker {user_id} is now working",
+            worker_id=user_id
+        )
 
         return {
             "status": "OK",
@@ -116,6 +131,13 @@ async def go_onsite(user_id: int):
             "location": "onsite"
         })
 
+        # Register as an info alert
+        await create_and_broadcast_alert(
+            severity_id=1,
+            message=f"Worker {user_id} moved onsite",
+            worker_id=user_id
+        )
+
         return {
             "status": "OK",
             "data": data
@@ -140,6 +162,13 @@ async def go_offste(user_id: int):
             "user_id": user_id,
             "location": "offsite"
         })
+
+        # Register as an info alert
+        await create_and_broadcast_alert(
+            severity_id=1,
+            message=f"Worker {user_id} moved offsite",
+            worker_id=user_id
+        )
 
         return {
             "status": "OK",

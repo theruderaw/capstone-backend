@@ -1,7 +1,7 @@
-from fastapi import FastAPI,HTTPException,Request
+from fastapi import FastAPI, HTTPException, Request
 import logging
 from fastapi.middleware.cors import CORSMiddleware
-from routers import helmet_router,project_router,finance_router,auth_router,user_router,info_router,report_router
+from routers import helmet_router,project_router,finance_router,auth_router,user_router,info_router,report_router,alert_router
 import ws
 
 print("Main module loaded")
@@ -39,6 +39,7 @@ app.include_router(info_router.router)
 app.include_router(report_router.router)
 app.include_router(project_router.router)
 app.include_router(helmet_router.router)
+app.include_router(alert_router.router)
 app.include_router(ws.router)
 
 @app.get("/",summary="Default landing route")

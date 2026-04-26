@@ -38,9 +38,10 @@ def add_helmet(user_id:UserAction):
         raise HTTPException(500,f"{e}")
 
 @router.patch("/assign")
-def add_helmet(payload:HelmetAssign):
+def assign_helmet(payload:HelmetAssign):
     status = get_status(payload.admin.user_id)
-    require_perm(status,21)
+    if status not in [5]:
+        raise HTTPException(403,"Forbidden")
 
     try:
         data = assign_helmet(payload)
